@@ -1,0 +1,24 @@
+-------------------
+## 📄 `.gitignore`
+
+```gitignore
+# Python
+__pycache__/
+*.pyc
+.env
+
+# React
+node_modules/
+dist/
+frontend/node_modules/
+
+
+# Docker
+*.log
+
+# Secrets
+*.env
+data/
+
+# VS Code
+.vscode/
