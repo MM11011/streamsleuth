@@ -83,14 +83,3 @@ Feel free to fork, clone, and contribute with feature branches and PRs. Contribu
 
 📄 License
 MIT License © 2025
-
-
-</details>
-
----
-
-### ✅ **Option 2: Use the Terminal**
-If you're more comfortable using the CLI:
-
-```bash
-cat > README.md
