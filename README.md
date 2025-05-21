@@ -60,8 +60,20 @@ streamsleuth/
 ├── docker-compose.yml
 └── README.md
 
-📸 Screenshots
-🔍 Log Upload Preview
+## 📸 Screenshots
+
+### 🔍 Log Upload Preview
+
+![Upload Preview](assets/streamsleuth_preview_1.png)
+
+### 🧠 Visual Search Tagging
+
+![Search Highlighting](assets/streamsleuth_preview_2.png)
+
+### 📊 Format Detection & Parsing
+
+![Log Format Parsing](assets/streamsleuth_preview_3.png)
+
 
 📑 Log Format Detection & Parsing
 
