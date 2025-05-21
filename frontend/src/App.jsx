@@ -1,129 +1,135 @@
-import { useState } from "react";
-import "./App.css";
+import React, { useState } from 'react';
+import './index.css';
+
+const logFormats = ['Generic', 'Apache/Nginx', 'Syslog', 'Splunk (Raw)', 'Splunk (JSON)'];
 
 function App() {
-  const [fileContent, setFileContent] = useState("");
-  const [fileName, setFileName] = useState("");
-  const [uploadStatus, setUploadStatus] = useState(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [logFormat, setLogFormat] = useState("Generic");
+  const [logFormat, setLogFormat] = useState('Generic');
+  const [logFile, setLogFile] = useState(null);
+  const [logLines, setLogLines] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filename, setFilename] = useState('');
 
-  const handleFileUpload = async (e) => {
+  const handleLogFormatChange = (e) => {
+    setLogFormat(e.target.value);
+    setLogLines([]);
+    setLogFile(null);
+    setFilename('');
+  };
+
+  const handleFileUpload = (e) => {
     const file = e.target.files[0];
-    if (!file) return;
-
-    setFileName(file.name);
-
+    setFilename(file.name);
     const reader = new FileReader();
     reader.onload = (event) => {
-      setFileContent(event.target.result);
+      const lines = event.target.result.split('\n').filter(Boolean);
+      setLogLines(lines);
     };
     reader.readAsText(file);
-
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-      const res = await fetch("http://localhost:8000/upload", {
-        method: "POST",
-        body: formData,
-      });
-      const data = await res.json();
-      setUploadStatus(`✅ Uploaded as: ${data.filename}`);
-    } catch (err) {
-      console.error("Upload failed:", err);
-      setUploadStatus("❌ Upload failed");
-    }
+    setLogFile(file);
   };
 
-  const parseLogs = (content) => {
-    const lines = content.split("\n");
-    return lines.filter((line) => line.trim() !== "").map((line) => {
-      const match = line.match(/(INFO|ERROR|WARNING)/i);
-      const level = match ? match[1].toUpperCase() : "UNKNOWN";
-      return { line, level };
-    });
-  };
-
-  const highlightMatch = (text, term) => {
-    if (!term) return text;
-    const regex = new RegExp(`(${term})`, "gi");
-    return text.split(regex).map((part, i) =>
-      regex.test(part) ? <mark key={i}>{part}</mark> : part
+  const highlightMatch = (line, term) => {
+    if (!term) return line;
+    const regex = new RegExp(`(${term})`, 'gi');
+    return line.split(regex).map((chunk, i) =>
+      chunk.toLowerCase() === term.toLowerCase() ? <mark key={i}>{chunk}</mark> : chunk
     );
   };
 
-  const parsedLogs = parseLogs(fileContent);
-  const filteredLogs = parsedLogs.filter((log) =>
-    log.line.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const parseSplunkLine = (line, format) => {
+    try {
+      if (format === 'Splunk (JSON)') {
+        const log = JSON.parse(line);
+        return {
+          host: log.host || 'unknown',
+          type: log.type || 'event',
+          message: log._raw || JSON.stringify(log),
+        };
+      }
+      if (format === 'Splunk (Raw)') {
+        const regex = /(\d{2}-\d{2}-\d{4} \d{2}:\d{2}:\d{2}.\d{3}) (\w+) (\w+) \[(\w+)] (.+)/;
+        const match = line.match(regex);
+        return {
+          host: match?.[2] || 'host',
+          type: match?.[3] || 'type',
+          message: match?.[5] || line,
+        };
+      }
+    } catch {
+      return { host: 'invalid', type: 'invalid', message: line };
+    }
+  };
 
-  const counts = parsedLogs.reduce(
-    (acc, log) => {
-      acc.total++;
-      acc[log.level] = (acc[log.level] || 0) + 1;
-      return acc;
-    },
-    { total: 0, INFO: 0, WARNING: 0, ERROR: 0 }
+  const getSeverityCounts = () => {
+    let info = 0, warning = 0, error = 0;
+    logLines.forEach((line) => {
+      const str = line.toLowerCase();
+      if (str.includes('info')) info++;
+      else if (str.includes('warn')) warning++;
+      else if (str.includes('error')) error++;
+    });
+    return { info, warning, error };
+  };
+
+  const { info, warning, error } = getSeverityCounts();
+
+  const filteredLogs = logLines.filter((line) =>
+    line.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
-    <div className="min-h-screen bg-zinc-900 text-white p-6 flex flex-col items-center">
-      <h1 className="text-4xl font-bold flex items-center gap-2">
-        🕵️‍♂️ StreamSleuth
-      </h1>
-      <p className="text-zinc-400 mb-4 text-center">
-        Log Inspector – Upload & Search Security Logs
-      </p>
+    <div className="container">
+      <h1>🕵️‍♂️ StreamSleuth</h1>
+      <p>Log Inspector – Upload & Search Security Logs</p>
 
-      <label className="mb-2">Log Format:</label>
-      <select
-        className="mb-4 p-2 bg-zinc-800 text-white border border-zinc-700 rounded"
-        value={logFormat}
-        onChange={(e) => setLogFormat(e.target.value)}
-      >
-        <option>Generic</option>
-        <option>Apache/Nginx</option>
-        <option>Syslog</option>
-        <option>Custom Regex</option>
-      </select>
+      <div className="controls">
+        <label>Log Format:</label>
+        <select value={logFormat} onChange={handleLogFormatChange}>
+          {logFormats.map((format) => (
+            <option key={format} value={format}>{format}</option>
+          ))}
+        </select>
 
-      <label className="mb-2">Upload a log file:</label>
-      <input
-        type="file"
-        accept=".txt"
-        onChange={handleFileUpload}
-        className="mb-2"
-      />
-      {uploadStatus && <p className="mb-2">{uploadStatus}</p>}
+        <label>Upload a log file:</label>
+        <input type="file" onChange={handleFileUpload} />
+      </div>
 
-      {fileContent && (
+      {logFile && (
         <>
-          <h2 className="font-semibold mb-2 mt-4">
-            📁 Previewing: <span className="text-white font-bold">{fileName}</span>
-          </h2>
-          <div className="text-sm mb-2">
-            📊 Total Entries: {counts.total} {" "}
-            ✅ INFO: {counts.INFO} ⚠️ WARNING: {counts.WARNING} ❌ ERROR: {counts.ERROR}
+          <p className="status">✅ Uploaded as: <span className="success">{filename}</span></p>
+          <p className="status">📂 Previewing: <strong>{filename}</strong></p>
+
+          <div className="stats">
+            📊 Total Entries: {logLines.length} ✅ INFO: {info} ⚠️ WARNING: {warning} ❌ ERROR: {error}
           </div>
 
           <input
             type="text"
+            className="search-input"
             placeholder="🔍 Search logs..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="p-2 mb-4 w-full max-w-xl rounded bg-zinc-800 border border-zinc-600 text-white"
           />
 
-          <div className="w-full max-w-3xl space-y-1 p-4 bg-zinc-800 rounded-lg">
-            {filteredLogs.map((log, idx) => (
-              <div key={idx} className="text-sm font-mono whitespace-pre-wrap">
-                {log.level === "INFO" && <span className="text-green-400 font-bold mr-2">INFO</span>}
-                {log.level === "WARNING" && <span className="text-yellow-400 font-bold mr-2">WARNING</span>}
-                {log.level === "ERROR" && <span className="text-red-400 font-bold mr-2">ERROR</span>}
-                {highlightMatch(log.line, searchTerm)}
-              </div>
-            ))}
+          <div className="log-entries">
+            {filteredLogs.map((line, idx) => {
+              const parsed = ['Splunk (Raw)', 'Splunk (JSON)'].includes(logFormat)
+                ? parseSplunkLine(line, logFormat)
+                : { host: '', type: '', message: line };
+
+              return (
+                <div className="log-entry" key={idx}>
+                  {parsed.host && (
+                    <span className="chip">host: {parsed.host}</span>
+                  )}
+                  {parsed.type && (
+                    <span className="chip">type: {parsed.type}</span>
+                  )}
+                  <span className="log-message">{highlightMatch(parsed.message, searchTerm)}</span>
+                </div>
+              );
+            })}
           </div>
         </>
       )}

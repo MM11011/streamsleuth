@@ -1,85 +1,80 @@
 # 🕵️‍♂️ StreamSleuth
 
-**StreamSleuth** is a full-stack security log ingestion and auditing platform that allows security teams to upload, view, search, and index event logs for audit investigations.
+**StreamSleuth** is a full-stack security log ingestion and auditing platform that allows security teams to upload, view, search, and parse event logs from a browser-based UI.
 
 ---
 
 ## 🎯 Features
 
-- Upload `.txt` log files in various formats
-- Select from built-in log format presets (Generic, Apache/Nginx, Syslog, Custom Regex)
-- View logs in a modern, responsive browser interface
-- Search logs by keyword, tag, or timestamp
-- Visually highlighted search matches for fast triage
+- Upload `.txt` logs in multiple formats:
+  - Generic
+  - Apache/Nginx
+  - Syslog
+  - **Splunk (Raw)** 🆕
+  - **Splunk (JSON)** 🆕
+- Real-time structured parsing of Splunk log data
+- Field-tag rendering (e.g., `host`, `sourcetype`) with visual chips
+- Keyword highlighting across log entries
 - Severity-based log grouping (INFO, WARNING, ERROR)
 - Auto-count and display of log levels
-- 📦 Ready for expansion into structured storage (e.g., SQLite/PostgreSQL)
-- 🧪 Built with testing in mind
+- Modern, responsive UI for audit review and triage
+- Built with testing and extensibility in mind
 
 ---
 
-## 🛠 Tech Stack
+## ⚙️ Tech Stack
 
-- **Frontend:** React + TailwindCSS
-- **Backend:** FastAPI (Python)
-- **Database (Planned):** SQLite → PostgreSQL
-- **Log Editor:** Custom-rendered UI with visual search tagging
-- **Containerization:** Docker
-- **Testing:** Pytest, React Testing Library
+- **Frontend**: React + TailwindCSS
+- **Backend**: FastAPI (Python)
+- **Log Editor**: Chip-rendered UI with custom log tag visualization
+- **Containerization**: Docker
+- **Testing**: Pytest + React Testing Library
 
 ---
 
 ## 🚀 Getting Started
 
-### 1. Clone the repo
+### 1. Clone and Start
 
 ```bash
 git clone https://github.com/yourusername/streamsleuth.git
 cd streamsleuth
-
-2. Start the full environment:
 docker-compose up --build
 
-📁 Project Structure
+2. Upload a log file via the web UI
+Choose your log format
 
-streamsleuth/
-├── backend/
-│   └── app/
-│       ├── main.py
-│       ├── api.py
-│       ├── models.py
-│       └── tests/
-│           └── test_api.py
-├── frontend/
-│   └── src/
-│       └── components/
-│           └── App.jsx
-├── data/         # Uploaded log files
-├── assets/       # Screenshots for GitHub README
-├── docs/         # Architecture, SDLC, diagrams (optional)
-├── docker-compose.yml
-└── README.md
+Upload .txt log
 
+Instantly parse, tag, and search entries
 
-📑 Log Format Detection & Parsing
+🔍 Supported Formats
+Format	Parsing Type	Tags Rendered
+Generic	Freeform	None
+Apache/Nginx	Regex-based	IPs, Methods
+Syslog	Pattern-based	Date, Severity
+Splunk (Raw)	Structured via regex	host, type, level
+Splunk (JSON)	JSON-based parsing	_time, host, sourcetype, log_level, message
 
-🎯 Custom Regex Search
+🛣️ Roadmap
+ JSON-based parsing for Splunk log exports
 
-✨ Visual Highlighting of Search Terms
+ Regex-powered parsing for Splunk raw logs
 
-🧭 Roadmap
- Timeline view with chronological event breakdown
+ Chip-based field visualization (host, sourcetype)
 
- Grouped filtering by log severity or source
+ Group-by filter for tags (host, type, level)
 
- Structured backend storage using SQLite/PostgreSQL
+ Timeline view for chronological log analysis
 
- Multi-file analysis & session tagging
+ Multi-log correlation for event chain reconstruction
 
- Export functionality for filtered logs
+ Export filtered logs (JSON, CSV)
+
+ Integration with Splunk HEC for live ingestion (future)
 
 🤝 Contributing
-Feel free to fork, clone, and contribute with feature branches and PRs. Contributions are welcome!
+Feel free to fork, clone, and contribute with feature branches and pull requests.
 
 📄 License
 MIT License © 2025

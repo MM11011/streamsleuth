@@ -1,42 +1,96 @@
-#root {
-  max-width: 1280px;
+body {
+  background-color: #111;
+  color: #fff;
+  font-family: 'Inter', sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+.container {
+  max-width: 960px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 2rem 1rem;
   text-align: center;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+h1 {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+label,
+select,
+input[type="file"],
+input[type="text"] {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+select,
+input[type="file"],
+input[type="text"] {
+  background-color: #222;
+  color: #fff;
+  border: 1px solid #555;
+  padding: 0.5rem;
+  border-radius: 4px;
+  width: 300px;
 }
 
-.card {
-  padding: 2em;
+input[type="text"] {
+  width: 100%;
+  max-width: 500px;
 }
 
-.read-the-docs {
-  color: #888;
+button {
+  margin-left: 10px;
+}
+
+.log-preview {
+  text-align: left;
+  margin-top: 1.5rem;
+  background-color: #1a1a1a;
+  padding: 1rem;
+  border-radius: 5px;
+  font-family: monospace;
+  white-space: pre-wrap;
+}
+
+.highlight {
+  background-color: yellow;
+  color: black;
+  font-weight: bold;
+}
+
+.status-info {
+  color: #00ff99;
+}
+
+.status-warning {
+  color: #ffcc00;
+}
+
+.status-error {
+  color: #ff4444;
+}
+
+.log-entry {
+  padding: 0.75rem;
+  border-radius: 5px;
+  margin-bottom: 0.5rem;
+  background-color: #222;
+  font-size: 0.95rem;
+}
+
+.tag-chip {
+  display: inline-block;
+  margin-right: 0.5rem;
+  margin-bottom: 0.3rem;
+  padding: 0.25rem 0.5rem;
+  background-color: #333;
+  color: #fff;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-family: monospace;
+  border: 1px solid #555;
 }
