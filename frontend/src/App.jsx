@@ -8,24 +8,6 @@ function App() {
   const [searchTerm, setSearchTerm] = useState("");
   const [logFormat, setLogFormat] = useState("Generic");
 
-  const parseLogs = (content) => {
-    const lines = content.split("\n");
-    const regexMap = {
-      Generic: /(INFO|WARNING|ERROR)/i,
-      "Apache/Nginx": /(INFO|WARNING|ERROR)/i,
-      Syslog: /\s(INFO|WARNING|ERROR)\s/i,
-      "Custom Regex": /(INFO|WARNING|ERROR)/i,
-    };
-    const logRegex = regexMap[logFormat];
-    return lines.map((line, index) => {
-      const match = line.match(logRegex);
-      const level = match ? match[1].toUpperCase() : "";
-      return { id: index, line, level };
-    });
-  };
-
-  const [logs, setLogs] = useState([]);
-
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -34,9 +16,7 @@ function App() {
 
     const reader = new FileReader();
     reader.onload = (event) => {
-      const text = event.target.result;
-      setFileContent(text);
-      setLogs(parseLogs(text));
+      setFileContent(event.target.result);
     };
     reader.readAsText(file);
 
@@ -56,81 +36,93 @@ function App() {
     }
   };
 
-  const filteredLogs = logs.filter((log) =>
+  const parseLogs = (content) => {
+    const lines = content.split("\n");
+    return lines.filter((line) => line.trim() !== "").map((line) => {
+      const match = line.match(/(INFO|ERROR|WARNING)/i);
+      const level = match ? match[1].toUpperCase() : "UNKNOWN";
+      return { line, level };
+    });
+  };
+
+  const highlightMatch = (text, term) => {
+    if (!term) return text;
+    const regex = new RegExp(`(${term})`, "gi");
+    return text.split(regex).map((part, i) =>
+      regex.test(part) ? <mark key={i}>{part}</mark> : part
+    );
+  };
+
+  const parsedLogs = parseLogs(fileContent);
+  const filteredLogs = parsedLogs.filter((log) =>
     log.line.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const levelCounts = logs.reduce(
+  const counts = parsedLogs.reduce(
     (acc, log) => {
       acc.total++;
-      if (log.level === "INFO") acc.info++;
-      else if (log.level === "WARNING") acc.warning++;
-      else if (log.level === "ERROR") acc.error++;
+      acc[log.level] = (acc[log.level] || 0) + 1;
       return acc;
     },
-    { total: 0, info: 0, warning: 0, error: 0 }
+    { total: 0, INFO: 0, WARNING: 0, ERROR: 0 }
   );
 
-  const levelBadge = (level) => {
-    switch (level) {
-      case "INFO":
-        return <span style={{ color: "#4ade80", fontWeight: 600 }}>🟩 INFO</span>;
-      case "WARNING":
-        return <span style={{ color: "#facc15", fontWeight: 600 }}>🟨 WARNING</span>;
-      case "ERROR":
-        return <span style={{ color: "#f87171", fontWeight: 600 }}>🟥 ERROR</span>;
-      default:
-        return null;
-    }
-  };
-
   return (
-    <div style={{ padding: "2rem", fontFamily: "monospace", color: "white" }}>
-      <h1>🕵️‍♂️ StreamSleuth</h1>
-      <p style={{ marginBottom: "0.5rem" }}>Log Inspector – Upload & Search Security Logs</p>
+    <div className="min-h-screen bg-zinc-900 text-white p-6 flex flex-col items-center">
+      <h1 className="text-4xl font-bold flex items-center gap-2">
+        🕵️‍♂️ StreamSleuth
+      </h1>
+      <p className="text-zinc-400 mb-4 text-center">
+        Log Inspector – Upload & Search Security Logs
+      </p>
 
-      <label htmlFor="format-select">Log Format:</label>
+      <label className="mb-2">Log Format:</label>
       <select
-        id="format-select"
+        className="mb-4 p-2 bg-zinc-800 text-white border border-zinc-700 rounded"
         value={logFormat}
         onChange={(e) => setLogFormat(e.target.value)}
-        style={{ marginLeft: "0.5rem", padding: "0.25rem" }}
       >
-        <option value="Generic">Generic</option>
-        <option value="Apache/Nginx">Apache/Nginx</option>
-        <option value="Syslog">Syslog</option>
-        <option value="Custom Regex">Custom Regex</option>
+        <option>Generic</option>
+        <option>Apache/Nginx</option>
+        <option>Syslog</option>
+        <option>Custom Regex</option>
       </select>
 
-      <div style={{ margin: "1rem 0" }}>
-        <label>
-          Upload a log file: <input type="file" onChange={handleFileUpload} />
-        </label>
-      </div>
+      <label className="mb-2">Upload a log file:</label>
+      <input
+        type="file"
+        accept=".txt"
+        onChange={handleFileUpload}
+        className="mb-2"
+      />
+      {uploadStatus && <p className="mb-2">{uploadStatus}</p>}
 
-      {uploadStatus && <p>{uploadStatus}</p>}
-
-      {fileName && (
+      {fileContent && (
         <>
-          <h3 style={{ display: "flex", alignItems: "center" }}>
-            📂 Previewing: <span style={{ marginLeft: "0.5rem" }}>{fileName}</span>
-          </h3>
-          <p>
-            📊 Total Entries: <b>{levelCounts.total}</b> ✅ INFO: <b>{levelCounts.info}</b> ⚠️ WARNING: <b>{levelCounts.warning}</b> ❌ ERROR: <b>{levelCounts.error}</b>
-          </p>
+          <h2 className="font-semibold mb-2 mt-4">
+            📁 Previewing: <span className="text-white font-bold">{fileName}</span>
+          </h2>
+          <div className="text-sm mb-2">
+            📊 Total Entries: {counts.total} {" "}
+            ✅ INFO: {counts.INFO} ⚠️ WARNING: {counts.WARNING} ❌ ERROR: {counts.ERROR}
+          </div>
+
           <input
             type="text"
             placeholder="🔍 Search logs..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ width: "100%", padding: "0.5rem", marginBottom: "1rem", borderRadius: "6px" }}
+            className="p-2 mb-4 w-full max-w-xl rounded bg-zinc-800 border border-zinc-600 text-white"
           />
 
-          <div style={{ background: "#1f2937", padding: "1rem", borderRadius: "8px" }}>
-            {filteredLogs.map((log) => (
-              <pre key={log.id} style={{ margin: "0.5rem 0" }}>
-                {levelBadge(log.level)} <span style={{ marginLeft: "0.5rem" }}>{log.line}</span>
-              </pre>
+          <div className="w-full max-w-3xl space-y-1 p-4 bg-zinc-800 rounded-lg">
+            {filteredLogs.map((log, idx) => (
+              <div key={idx} className="text-sm font-mono whitespace-pre-wrap">
+                {log.level === "INFO" && <span className="text-green-400 font-bold mr-2">INFO</span>}
+                {log.level === "WARNING" && <span className="text-yellow-400 font-bold mr-2">WARNING</span>}
+                {log.level === "ERROR" && <span className="text-red-400 font-bold mr-2">ERROR</span>}
+                {highlightMatch(log.line, searchTerm)}
+              </div>
             ))}
           </div>
         </>
