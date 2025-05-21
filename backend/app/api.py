@@ -1,18 +1,16 @@
 from fastapi import APIRouter, UploadFile, File
-import os
-import uuid
+from fastapi.responses import JSONResponse
 
 router = APIRouter()
 
-DATA_DIR = "data"
-os.makedirs(DATA_DIR, exist_ok=True)
-
 @router.post("/upload")
-async def upload_log(file: UploadFile = File(...)):
-    file_id = str(uuid.uuid4())
-    file_path = os.path.join(DATA_DIR, f"{file_id}_{file.filename}")
-
-    with open(file_path, "wb") as f:
-        f.write(await file.read())
-
-    return {"message": "File uploaded successfully", "filename": file.filename, "id": file_id}
+async def upload_file(file: UploadFile = File(...)):
+    try:
+        contents = await file.read()
+        # Save the uploaded file to disk (optional)
+        with open(f"data/{file.filename}", "wb") as f:
+            f.write(contents)
+        
+        return JSONResponse(content={"filename": file.filename})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
