@@ -60,23 +60,6 @@ streamsleuth/
 ├── docker-compose.yml
 └── README.md
 
-## 📸 Screenshots
-
-### 🔍 Log Upload Preview
-![Upload Preview](frontend/src/assets/streamsleuth_preview_1.png)
-
-### 🧠 Visual Search Tagging
-![Search Highlighting](frontend/src/assets/streamsleuth_preview_2.png)
-
-### 🌐 Format Detection & Parsing
-![Log Format Parsing](frontend/src/assets/streamsleuth_preview_3.png)
-
-### ✅ Search Match Highlighting
-![Highlighting](frontend/src/assets/streamsleuth_preview_4.png)
-
-### 📊 Entry Count by Severity
-![Log Count](frontend/src/assets/streamsleuth_preview_5.png)
-
 
 📑 Log Format Detection & Parsing
 
