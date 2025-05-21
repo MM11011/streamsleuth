@@ -56,7 +56,36 @@ Syslog	Pattern-based	Date, Severity
 Splunk (Raw)	Structured via regex	host, type, level
 Splunk (JSON)	JSON-based parsing	_time, host, sourcetype, log_level, message
 
-🛣️ Roadmap
+🛣️ Roadma
+
+---
+
+## 🧠 Splunk Log Parsing Support
+
+StreamSleuth now supports:
+
+- ✅ Raw Splunk logs (`Splunk (Raw)`)
+- ✅ JSON-formatted Splunk logs (`Splunk (JSON)`)
+- 🧠 Structured parsing of fields (host, sourcetype, message, log level, etc.)
+- 🧠 Visual tags for host/type breakdown
+- ✅ Real-time search with keyword highlighting
+- ✅ Format-specific preview with severity color coding
+
+---
+
+## 🚀 Roadmap
+
+- [x] Splunk (Raw) parsing with visual tag extraction
+- [x] Splunk (JSON) parsing with structured field preview
+- [x] Search term highlighting
+- [x] Log entry severity indicators
+- [x] Visual chip-style tags for host/type
+- [ ] CSV Upload and Filter Tool (for Data Classification)
+- [ ] Timeline View for chronological event navigation
+- [ ] Grouped filtering by host/type/severity
+- [ ] Export filtered results (JSON/CSV)
+- [ ] AI-powered pattern detection for anomaly logs
+
  JSON-based parsing for Splunk log exports
 
  Regex-powered parsing for Splunk raw logs

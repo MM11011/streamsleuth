@@ -1,138 +1,147 @@
-import React, { useState } from 'react';
-import './index.css';
-
-const logFormats = ['Generic', 'Apache/Nginx', 'Syslog', 'Splunk (Raw)', 'Splunk (JSON)'];
+import React, { useState } from "react";
+import "./App.css";
 
 function App() {
-  const [logFormat, setLogFormat] = useState('Generic');
-  const [logFile, setLogFile] = useState(null);
-  const [logLines, setLogLines] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filename, setFilename] = useState('');
+  const [logFormat, setLogFormat] = useState("Generic");
+  const [fileName, setFileName] = useState("");
+  const [logData, setLogData] = useState([]);
+  const [filteredData, setFilteredData] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
 
-  const handleLogFormatChange = (e) => {
+  const handleFormatChange = (e) => {
     setLogFormat(e.target.value);
-    setLogLines([]);
-    setLogFile(null);
-    setFilename('');
+    setLogData([]);
+    setFilteredData([]);
+    setFileName("");
+    setSearchTerm("");
   };
 
-  const handleFileUpload = (e) => {
+  const handleFileUpload = async (e) => {
     const file = e.target.files[0];
-    setFilename(file.name);
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const lines = event.target.result.split('\n').filter(Boolean);
-      setLogLines(lines);
-    };
-    reader.readAsText(file);
-    setLogFile(file);
-  };
+    if (!file) return;
 
-  const highlightMatch = (line, term) => {
-    if (!term) return line;
-    const regex = new RegExp(`(${term})`, 'gi');
-    return line.split(regex).map((chunk, i) =>
-      chunk.toLowerCase() === term.toLowerCase() ? <mark key={i}>{chunk}</mark> : chunk
-    );
-  };
+    setFileName(file.name);
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("log_format", logFormat);
 
-  const parseSplunkLine = (line, format) => {
     try {
-      if (format === 'Splunk (JSON)') {
-        const log = JSON.parse(line);
-        return {
-          host: log.host || 'unknown',
-          type: log.type || 'event',
-          message: log._raw || JSON.stringify(log),
-        };
-      }
-      if (format === 'Splunk (Raw)') {
-        const regex = /(\d{2}-\d{2}-\d{4} \d{2}:\d{2}:\d{2}.\d{3}) (\w+) (\w+) \[(\w+)] (.+)/;
-        const match = line.match(regex);
-        return {
-          host: match?.[2] || 'host',
-          type: match?.[3] || 'type',
-          message: match?.[5] || line,
-        };
-      }
-    } catch {
-      return { host: 'invalid', type: 'invalid', message: line };
+      const res = await fetch("http://localhost:8000/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      const entries = data.entries || [];
+      setLogData(entries);
+      setFilteredData(entries);
+    } catch (err) {
+      console.error("Upload failed", err);
     }
   };
 
-  const getSeverityCounts = () => {
-    let info = 0, warning = 0, error = 0;
-    logLines.forEach((line) => {
-      const str = line.toLowerCase();
-      if (str.includes('info')) info++;
-      else if (str.includes('warn')) warning++;
-      else if (str.includes('error')) error++;
+  const handleSearch = (e) => {
+    const term = e.target.value;
+    setSearchTerm(term);
+
+    if (!term.trim()) {
+      setFilteredData(logData);
+      return;
+    }
+
+    if (logFormat === "Data Classification (CSV)" && term.includes("=")) {
+      const [key, value] = term.split("=").map((v) => v.trim());
+      const filtered = logData.filter((row) =>
+        row[key] && row[key].toString().trim() === value
+      );
+      setFilteredData(filtered);
+    } else {
+      const filtered = logData.filter((entry) =>
+        JSON.stringify(entry).toLowerCase().includes(term.toLowerCase())
+      );
+      setFilteredData(filtered);
+    }
+  };
+
+  const getStats = () => {
+    if (logFormat === "Data Classification (CSV)") {
+      return {
+        info: filteredData.length,
+        warning: 0,
+        error: 0,
+      };
+    }
+
+    let info = 0,
+      warning = 0,
+      error = 0;
+
+    filteredData.forEach((entry) => {
+      if (typeof entry === "string") {
+        if (entry.includes("INFO")) info++;
+        else if (entry.includes("WARNING")) warning++;
+        else if (entry.includes("ERROR")) error++;
+      }
     });
+
     return { info, warning, error };
   };
 
-  const { info, warning, error } = getSeverityCounts();
-
-  const filteredLogs = logLines.filter((line) =>
-    line.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const stats = getStats();
 
   return (
     <div className="container">
       <h1>🕵️‍♂️ StreamSleuth</h1>
       <p>Log Inspector – Upload & Search Security Logs</p>
 
-      <div className="controls">
-        <label>Log Format:</label>
-        <select value={logFormat} onChange={handleLogFormatChange}>
-          {logFormats.map((format) => (
-            <option key={format} value={format}>{format}</option>
-          ))}
-        </select>
+      <label>Log Format:</label>
+      <select value={logFormat} onChange={handleFormatChange}>
+        <option>Generic</option>
+        <option>Apache/Nginx</option>
+        <option>Splunk (Raw)</option>
+        <option>Splunk (JSON)</option>
+        <option>Data Classification (CSV)</option>
+      </select>
 
+      <div>
         <label>Upload a log file:</label>
         <input type="file" onChange={handleFileUpload} />
       </div>
 
-      {logFile && (
+      {fileName && (
         <>
-          <p className="status">✅ Uploaded as: <span className="success">{filename}</span></p>
-          <p className="status">📂 Previewing: <strong>{filename}</strong></p>
-
-          <div className="stats">
-            📊 Total Entries: {logLines.length} ✅ INFO: {info} ⚠️ WARNING: {warning} ❌ ERROR: {error}
-          </div>
-
-          <input
-            type="text"
-            className="search-input"
-            placeholder="🔍 Search logs..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-
-          <div className="log-entries">
-            {filteredLogs.map((line, idx) => {
-              const parsed = ['Splunk (Raw)', 'Splunk (JSON)'].includes(logFormat)
-                ? parseSplunkLine(line, logFormat)
-                : { host: '', type: '', message: line };
-
-              return (
-                <div className="log-entry" key={idx}>
-                  {parsed.host && (
-                    <span className="chip">host: {parsed.host}</span>
-                  )}
-                  {parsed.type && (
-                    <span className="chip">type: {parsed.type}</span>
-                  )}
-                  <span className="log-message">{highlightMatch(parsed.message, searchTerm)}</span>
-                </div>
-              );
-            })}
-          </div>
+          <p style={{ color: "limegreen" }}>
+            ✅ Uploaded as: <strong>{fileName}</strong>
+          </p>
+          <p style={{ color: "#ccc" }}>
+            📂 Previewing: <em>{fileName}</em>
+          </p>
         </>
       )}
+
+      <div className="stats">
+        📊 Total Entries: {filteredData.length} ✅ INFO: {stats.info} ⚠️
+        WARNING: {stats.warning} ❌ ERROR: {stats.error}
+      </div>
+
+      <input
+        type="text"
+        placeholder={
+          logFormat === "Data Classification (CSV)"
+            ? "e.g. #_of_Records = 0"
+            : "Search logs..."
+        }
+        value={searchTerm}
+        onChange={handleSearch}
+      />
+
+      <div className="log-list">
+        {filteredData.map((entry, i) => (
+          <div key={i} className="log-line">
+            <pre>{JSON.stringify(entry, null, 2)}</pre>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
