@@ -36,54 +36,61 @@ function App() {
 
   const getHighlightedContent = () => {
     if (!searchTerm) return fileContent;
-
     const escaped = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const regex = new RegExp(`(${escaped})`, "gi");
     return fileContent.replace(regex, "🔍$1🔍");
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 px-4 py-10">
-      <div className="max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-6">
-        <h1 className="text-2xl font-bold text-gray-800 mb-4">
+    <div className="min-h-screen bg-gray-900 text-white px-4 py-8">
+      <div className="max-w-5xl mx-auto">
+        <h1 className="text-3xl font-bold mb-6">
           🕵️‍♂️ StreamSleuth – Log Inspector
         </h1>
 
-        <label className="block mb-2 text-sm font-medium text-gray-700">
-          Upload a log file:
-        </label>
-        <input
-          type="file"
-          accept=".log,.txt,.json"
-          onChange={handleFileUpload}
-          className="mb-4 block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50"
-        />
-
-        {uploadStatus && (
-          <p className={`text-sm mb-2 ${uploadStatus.startsWith("✅") ? "text-green-600" : "text-red-500"} font-semibold`}>
-            {uploadStatus}
-          </p>
-        )}
-
-        {fileName && (
-          <>
-            <p className="text-sm text-gray-500 mb-2">📄 Previewing: {fileName}</p>
-
+        <div className="space-y-6">
+          <div>
+            <label className="block mb-2 text-sm font-semibold text-gray-300">
+              Upload a log file:
+            </label>
             <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="🔎 Search log contents..."
-              className="mb-3 w-full p-2 text-sm border border-gray-300 rounded"
+              type="file"
+              accept=".log,.txt,.json"
+              onChange={handleFileUpload}
+              className="text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-600 file:text-white hover:file:bg-blue-700"
             />
+          </div>
 
-            <textarea
-              readOnly
-              value={getHighlightedContent()}
-              className="w-full h-96 font-mono text-sm p-3 border border-gray-300 rounded-md resize-none bg-gray-50 text-gray-800"
-            ></textarea>
-          </>
-        )}
+          {uploadStatus && (
+            <p
+              className={`text-sm font-medium ${
+                uploadStatus.startsWith("✅") ? "text-green-400" : "text-red-400"
+              }`}
+            >
+              {uploadStatus}
+            </p>
+          )}
+
+          {fileName && (
+            <>
+              <p className="text-sm text-gray-400">
+                📄 Previewing: <strong>{fileName}</strong>
+              </p>
+
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="🔍 Search log content..."
+                className="mt-2 mb-4 w-full p-2 rounded border border-gray-700 bg-gray-800 text-white placeholder-gray-400"
+              />
+
+              <pre className="h-[70vh] w-full overflow-y-scroll bg-black p-4 rounded-lg border border-gray-700 text-sm leading-relaxed whitespace-pre-wrap font-mono">
+                {getHighlightedContent()}
+              </pre>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
