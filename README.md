@@ -63,16 +63,19 @@ streamsleuth/
 ## 📸 Screenshots
 
 ### 🔍 Log Upload Preview
-
-![Upload Preview](assets/streamsleuth_preview_1.png)
+![Upload Preview](frontend/src/assets/streamsleuth_preview_1.png)
 
 ### 🧠 Visual Search Tagging
+![Search Highlighting](frontend/src/assets/streamsleuth_preview_2.png)
 
-![Search Highlighting](assets/streamsleuth_preview_2.png)
+### 🌐 Format Detection & Parsing
+![Log Format Parsing](frontend/src/assets/streamsleuth_preview_3.png)
 
-### 📊 Format Detection & Parsing
+### ✅ Search Match Highlighting
+![Highlighting](frontend/src/assets/streamsleuth_preview_4.png)
 
-![Log Format Parsing](assets/streamsleuth_preview_3.png)
+### 📊 Entry Count by Severity
+![Log Count](frontend/src/assets/streamsleuth_preview_5.png)
 
 
 📑 Log Format Detection & Parsing
