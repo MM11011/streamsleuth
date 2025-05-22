@@ -73,9 +73,6 @@ View live stats and JSON preview of each entry.
 Click Download Filtered Results to get a CSV of your current view.
 
 🗂 Project Structure
-css
-Copy
-Edit
 ├── backend/
 │   ├── app/
 │   │   ├── api/
