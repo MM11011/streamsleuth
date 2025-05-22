@@ -1,4 +1,3 @@
-// src/App.jsx
 import React, { useState } from "react";
 import "./App.css";
 
@@ -8,15 +7,15 @@ function App() {
   const [logData, setLogData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [headers, setHeaders] = useState([]); // ← new
+  const [headers, setHeaders] = useState([]);
 
   const handleFormatChange = (e) => {
     setLogFormat(e.target.value);
+    setFileName("");
     setLogData([]);
     setFilteredData([]);
-    setFileName("");
     setSearchTerm("");
-    setHeaders([]); // clear keys
+    setHeaders([]);
   };
 
   const handleFileUpload = async (e) => {
@@ -34,10 +33,30 @@ function App() {
         body: formData,
       });
       const data = await res.json();
-      const entries = data.entries || [];
+      let entries = data.entries || [];
+
+      // For Generic & Apache, wrap each line in { message }
+      if (logFormat === "Generic" || logFormat === "Apache/Nginx") {
+        entries = entries.map(line => ({ message: line }));
+        setHeaders(["message"]);
+      }
+      // For Splunk Raw/JSON, compute keys dynamically
+      else if (logFormat === "Splunk (Raw)" || logFormat === "Splunk (JSON)") {
+        const keySet = new Set();
+        entries.forEach(e => {
+          if (e && typeof e === "object") {
+            Object.keys(e).forEach(k => keySet.add(k));
+          }
+        });
+        setHeaders(Array.from(keySet));
+      }
+      // For CSV, use provided headers
+      else if (logFormat === "Data Classification (CSV)") {
+        setHeaders(data.headers || []);
+      }
+
       setLogData(entries);
       setFilteredData(entries);
-      setHeaders(data.headers || []); // ← capture headers
     } catch (err) {
       console.error("Upload failed", err);
     }
@@ -52,17 +71,23 @@ function App() {
       return;
     }
 
-    if (logFormat === "Data Classification (CSV)" && term.includes("=")) {
+    // only these formats support chained filters
+    const structured = [
+      "Data Classification (CSV)",
+      "Splunk (Raw)",
+      "Splunk (JSON)"
+    ];
+    if (term.includes("=") && structured.includes(logFormat)) {
       const clauses = term.split(",").map(c => c.trim()).filter(Boolean);
       let filtered = [...logData];
 
       clauses.forEach(clause => {
-        const [rawKey, rawVal] = clause.split("=").map(s => s.trim());
-        if (!rawKey || !rawVal) return;
-        const values = rawVal.split(/[,|]/).map(v => v.trim());
+        const [key, val] = clause.split("=").map(s => s.trim());
+        if (!key || !val) return;
+        const vals = val.split(/[,|]/).map(v => v.trim());
         filtered = filtered.filter(row => {
-          const cell = (row[rawKey] ?? "").toString().trim();
-          return values.includes(cell);
+          const cell = (row[key] ?? "").toString().trim();
+          return vals.includes(cell);
         });
       });
 
@@ -70,50 +95,48 @@ function App() {
       return;
     }
 
-    const generic = logData.filter(entry =>
-      JSON.stringify(entry).toLowerCase().includes(term.toLowerCase())
-    );
+    // generic substring search on entire object or message
+    const lower = term.toLowerCase();
+    const generic = logData.filter(entry => {
+      if (typeof entry === "object") {
+        return JSON.stringify(entry).toLowerCase().includes(lower);
+      }
+      return entry.toString().toLowerCase().includes(lower);
+    });
     setFilteredData(generic);
   };
 
   const getStats = () => {
     if (logFormat === "Data Classification (CSV)") {
-      return {
-        info: filteredData.length,
-        warning: 0,
-        error: 0,
-      };
+      return { info: filteredData.length, warning: 0, error: 0 };
     }
     let info = 0, warning = 0, error = 0;
     filteredData.forEach(entry => {
-      if (typeof entry === "string") {
-        if (entry.includes("INFO")) info++;
-        else if (entry.includes("WARNING")) warning++;
-        else if (entry.includes("ERROR")) error++;
-      }
+      const msg = typeof entry === "object" ? JSON.stringify(entry) : entry;
+      if (msg.includes("INFO")) info++;
+      if (msg.includes("WARNING")) warning++;
+      if (msg.includes("ERROR")) error++;
     });
     return { info, warning, error };
   };
 
   const handleDownload = () => {
-    if (filteredData.length === 0) return;
-    const headers = Object.keys(filteredData[0]);
-    const csvRows = [headers.join(",")];
+    if (logFormat !== "Data Classification (CSV)" || !filteredData.length) return;
+    const cols = Object.keys(filteredData[0]);
+    const rows = [cols.join(",")];
     filteredData.forEach(row => {
-      const values = headers.map(h => {
-        let val = (row[h] ?? "").toString().replace(/"/g, '""');
-        if (val.includes(",") || val.includes("\n")) val = `"${val}"`;
-        return val;
+      const vals = cols.map(h => {
+        let v = (row[h] ?? "").toString().replace(/"/g,'""');
+        if (v.includes(",") || v.includes("\n")) v = `"${v}"`;
+        return v;
       });
-      csvRows.push(values.join(","));
+      rows.push(vals.join(","));
     });
-    const blob = new Blob([csvRows.join("\n")], { type: "text/csv" });
+    const blob = new Blob([rows.join("\n")], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url;
-    a.download = "filtered_results.csv";
-    a.click();
-    URL.revokeObjectURL(url);
+    a.href = url; a.download = "filtered_results.csv";
+    a.click(); URL.revokeObjectURL(url);
   };
 
   const stats = getStats();
@@ -139,54 +162,49 @@ function App() {
 
       {fileName && (
         <>
-          <p style={{ color: "limegreen" }}>
-            ✅ Uploaded as: <strong>{fileName}</strong>
-          </p>
-          <p style={{ color: "#ccc" }}>
-            📂 Previewing: <em>{fileName}</em>
-          </p>
+          <p style={{ color:"limegreen" }}>✅ Uploaded as: <strong>{fileName}</strong></p>
+          <p style={{ color:"#ccc" }}>📂 Previewing: <em>{fileName}</em></p>
         </>
       )}
 
       <div className="stats">
-        📊 Total Entries: {filteredData.length} ✅ INFO: {stats.info} ⚠️ WARNING: {stats.warning} ❌ ERROR: {stats.error}
+        📊 Total: {filteredData.length} | INFO: {stats.info} | ⚠️ {stats.warning} | ❌ {stats.error}
       </div>
 
       <input
         type="text"
         placeholder={
           logFormat === "Data Classification (CSV)"
-            ? "e.g. #_of_Records = 0, Sensitivity_Level = Confidential,Private"
+            ? "e.g. #_of_Records = 0, Sensitivity_Level = Confidential"
             : "Search logs..."
         }
         value={searchTerm}
         onChange={handleSearch}
       />
 
-      {logFormat === "Data Classification (CSV)" && filteredData.length > 0 && (
-        <button onClick={handleDownload} style={{ marginTop: "1rem" }}>
+      {logFormat==="Data Classification (CSV)" && filteredData.length>0 && (
+        <button onClick={handleDownload} style={{marginTop:"1rem"}}>
           Download Filtered Results
         </button>
       )}
 
-      {/* Sidebar with Filter Keys */}
-      {headers.length > 0 && (
+      {headers.length>0 && (
         <aside className="filter-reference">
           <h2>Filter Keys</h2>
           <ul>
-            {headers.map((h) => (
-              <li key={h}>{h}</li>
-            ))}
+            {headers.map(h => <li key={h}>{h}</li>)}
           </ul>
         </aside>
       )}
 
       <div className="log-list">
-        {filteredData.map((entry, i) => (
+        {filteredData.map((entry,i)=>
           <div key={i} className="log-line">
-            <pre>{JSON.stringify(entry, null, 2)}</pre>
+            { typeof entry==="object"
+              ? <pre>{JSON.stringify(entry,null,2)}</pre>
+              : <pre>{entry}</pre> }
           </div>
-        ))}
+        )}
       </div>
     </div>
   );
