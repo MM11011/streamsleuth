@@ -1,3 +1,4 @@
+// src/App.jsx
 import React, { useState } from "react";
 import "./App.css";
 
@@ -7,6 +8,7 @@ function App() {
   const [logData, setLogData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [headers, setHeaders] = useState([]); // ← new
 
   const handleFormatChange = (e) => {
     setLogFormat(e.target.value);
@@ -14,6 +16,7 @@ function App() {
     setFilteredData([]);
     setFileName("");
     setSearchTerm("");
+    setHeaders([]); // clear keys
   };
 
   const handleFileUpload = async (e) => {
@@ -30,37 +33,47 @@ function App() {
         method: "POST",
         body: formData,
       });
-
       const data = await res.json();
       const entries = data.entries || [];
       setLogData(entries);
       setFilteredData(entries);
+      setHeaders(data.headers || []); // ← capture headers
     } catch (err) {
       console.error("Upload failed", err);
     }
   };
 
   const handleSearch = (e) => {
-    const term = e.target.value;
+    const term = e.target.value.trim();
     setSearchTerm(term);
 
-    if (!term.trim()) {
+    if (!term) {
       setFilteredData(logData);
       return;
     }
 
     if (logFormat === "Data Classification (CSV)" && term.includes("=")) {
-      const [key, value] = term.split("=").map((v) => v.trim());
-      const filtered = logData.filter((row) =>
-        row[key] && row[key].toString().trim() === value
-      );
+      const clauses = term.split(",").map(c => c.trim()).filter(Boolean);
+      let filtered = [...logData];
+
+      clauses.forEach(clause => {
+        const [rawKey, rawVal] = clause.split("=").map(s => s.trim());
+        if (!rawKey || !rawVal) return;
+        const values = rawVal.split(/[,|]/).map(v => v.trim());
+        filtered = filtered.filter(row => {
+          const cell = (row[rawKey] ?? "").toString().trim();
+          return values.includes(cell);
+        });
+      });
+
       setFilteredData(filtered);
-    } else {
-      const filtered = logData.filter((entry) =>
-        JSON.stringify(entry).toLowerCase().includes(term.toLowerCase())
-      );
-      setFilteredData(filtered);
+      return;
     }
+
+    const generic = logData.filter(entry =>
+      JSON.stringify(entry).toLowerCase().includes(term.toLowerCase())
+    );
+    setFilteredData(generic);
   };
 
   const getStats = () => {
@@ -71,50 +84,34 @@ function App() {
         error: 0,
       };
     }
-
-    let info = 0,
-      warning = 0,
-      error = 0;
-
-    filteredData.forEach((entry) => {
+    let info = 0, warning = 0, error = 0;
+    filteredData.forEach(entry => {
       if (typeof entry === "string") {
         if (entry.includes("INFO")) info++;
         else if (entry.includes("WARNING")) warning++;
         else if (entry.includes("ERROR")) error++;
       }
     });
-
     return { info, warning, error };
   };
 
-  // New function to download filteredData as CSV
   const handleDownload = () => {
     if (filteredData.length === 0) return;
-
-    // Derive headers from first row
     const headers = Object.keys(filteredData[0]);
-    const csvRows = [];
-
-    // Add header row
-    csvRows.push(headers.join(","));
-
-    // Add data rows
-    filteredData.forEach((row) => {
-      const values = headers.map((h) => {
-        let val = row[h] ?? '';
-        val = val.toString().replace(/"/g, '""');
-        if (val.includes(',') || val.includes('\n')) val = `"${val}"`;
+    const csvRows = [headers.join(",")];
+    filteredData.forEach(row => {
+      const values = headers.map(h => {
+        let val = (row[h] ?? "").toString().replace(/"/g, '""');
+        if (val.includes(",") || val.includes("\n")) val = `"${val}"`;
         return val;
       });
       csvRows.push(values.join(","));
     });
-
-    const csvString = csvRows.join("\n");
-    const blob = new Blob([csvString], { type: 'text/csv' });
+    const blob = new Blob([csvRows.join("\n")], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = 'filtered_results.csv';
+    a.download = "filtered_results.csv";
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -159,18 +156,29 @@ function App() {
         type="text"
         placeholder={
           logFormat === "Data Classification (CSV)"
-            ? "e.g. #_of_Records = 0"
+            ? "e.g. #_of_Records = 0, Sensitivity_Level = Confidential,Private"
             : "Search logs..."
         }
         value={searchTerm}
         onChange={handleSearch}
       />
 
-      {/* Download button for filtered CSV */}
       {logFormat === "Data Classification (CSV)" && filteredData.length > 0 && (
-        <button onClick={handleDownload} style={{ marginTop: '1rem' }}>
+        <button onClick={handleDownload} style={{ marginTop: "1rem" }}>
           Download Filtered Results
         </button>
+      )}
+
+      {/* Sidebar with Filter Keys */}
+      {headers.length > 0 && (
+        <aside className="filter-reference">
+          <h2>Filter Keys</h2>
+          <ul>
+            {headers.map((h) => (
+              <li key={h}>{h}</li>
+            ))}
+          </ul>
+        </aside>
       )}
 
       <div className="log-list">

@@ -98,3 +98,43 @@ em {
   color: black;
   font-weight: bold;
 }
+
+/* App.css */
+
+.container {
+  position: relative;
+  padding-right: 220px; /* make room for sidebar */
+}
+
+/* Sidebar styling */
+.filter-reference {
+  position: fixed;
+  right: 1rem;
+  top: 5rem;
+  width: 200px;
+  max-height: 60vh;
+  overflow-y: auto;
+  background: #242323;
+  border: 1px solid #ccc;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.1);
+}
+
+.filter-reference h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 0.25rem;
+}
+
+.filter-reference ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.filter-reference li {
+  font-size: 0.875rem;
+  margin-bottom: 0.25rem;
+}
