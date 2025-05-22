@@ -87,6 +87,38 @@ function App() {
     return { info, warning, error };
   };
 
+  // New function to download filteredData as CSV
+  const handleDownload = () => {
+    if (filteredData.length === 0) return;
+
+    // Derive headers from first row
+    const headers = Object.keys(filteredData[0]);
+    const csvRows = [];
+
+    // Add header row
+    csvRows.push(headers.join(","));
+
+    // Add data rows
+    filteredData.forEach((row) => {
+      const values = headers.map((h) => {
+        let val = row[h] ?? '';
+        val = val.toString().replace(/"/g, '""');
+        if (val.includes(',') || val.includes('\n')) val = `"${val}"`;
+        return val;
+      });
+      csvRows.push(values.join(","));
+    });
+
+    const csvString = csvRows.join("\n");
+    const blob = new Blob([csvString], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'filtered_results.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const stats = getStats();
 
   return (
@@ -120,8 +152,7 @@ function App() {
       )}
 
       <div className="stats">
-        📊 Total Entries: {filteredData.length} ✅ INFO: {stats.info} ⚠️
-        WARNING: {stats.warning} ❌ ERROR: {stats.error}
+        📊 Total Entries: {filteredData.length} ✅ INFO: {stats.info} ⚠️ WARNING: {stats.warning} ❌ ERROR: {stats.error}
       </div>
 
       <input
@@ -134,6 +165,13 @@ function App() {
         value={searchTerm}
         onChange={handleSearch}
       />
+
+      {/* Download button for filtered CSV */}
+      {logFormat === "Data Classification (CSV)" && filteredData.length > 0 && (
+        <button onClick={handleDownload} style={{ marginTop: '1rem' }}>
+          Download Filtered Results
+        </button>
+      )}
 
       <div className="log-list">
         {filteredData.map((entry, i) => (
