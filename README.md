@@ -61,16 +61,11 @@ Frontend: http://localhost:5173
 Backend API docs: http://localhost:8000/docs
 
 Upload & Explore:
-
-Select log format from the dropdown.
-
-Upload your log file (any supported format).
-
-Filter results using the search box (field=value or keywords).
-
-View live stats and JSON preview of each entry.
-
-Click Download Filtered Results to get a CSV of your current view.
+1. Select log format from the dropdown.
+2. Upload your log file (any supported format).
+3. Filter results using the search box (field=value or keywords).
+4. View live stats and JSON preview of each entry.
+5. Click Download Filtered Results to get a CSV of your current view.
 
 🗂 Project Structure
 ├── backend/
