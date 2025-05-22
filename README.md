@@ -103,15 +103,11 @@ GET	/download	Download the last filtered CSV as filtered_results.csv
 🤝 Contributing
 Contributions are welcome! Please:
 
-Fork the repo.
-
-Create a new branch: git checkout -b feature/YourFeature
-
-Commit your changes: git commit -m 'feat: description'
-
-Push to branch: git push origin feature/YourFeature
-
-Open a Pull Request.
+1. Fork the repo.
+2. Create a new branch: git checkout -b feature/YourFeature
+3. Commit your changes: git commit -m 'feat: description'
+4. Push to branch: git push origin feature/YourFeature
+5. Open a Pull Request.
 
 📝 License
 Distributed under the MIT License. See LICENSE for more information.
